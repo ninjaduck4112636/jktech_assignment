@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RAG Document Query System</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #query-form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #query-input {
+            flex-grow: 1;
+            padding: 10px;
+        }
+        #submit-btn {
+            padding: 10px 20px;
+        }
+        #result {
+            border: 1px solid #ccc;
+            padding: 15px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Document Query System</h1>
+    <form id="query-form">
+        {% csrf_token %}
+        <input type="text" id="query-input" name="query" placeholder="Enter your query" required>
+        <button type="submit" id="submit-btn">Query</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('query-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            const query = document.getElementById('query-input').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.textContent = 'Loading...';
+            
+            axios.post('/query/', 
+                new FormData(form),
+                {
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                }
+            )
+            .then(response => {
+                resultDiv.textContent = response.data.answer;
+            })
+            .catch(error => {
+                resultDiv.textContent = 'Error: ' + (error.response ? error.response.data.error : error.message);
+            });
+        });
+    </script>
+</body>
+</html>
