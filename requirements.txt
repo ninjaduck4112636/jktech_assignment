@@ -6,3 +6,4 @@ google-generativeai
 numpy
 python-dotenv
 tiktoken
+coverage
