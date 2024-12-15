@@ -9,12 +9,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def index(request):
-    return render(request, 'index.html')
+    DOCUMENTATION_FOLDER = './documents'
+    files = [f for f in os.listdir(DOCUMENTATION_FOLDER) if f.endswith('.txt')]
+    return render(request, 'index.html', {'files': files})
 
 @csrf_protect
 @require_http_methods(["POST"])
 def query_documents(request):
     query = request.POST.get('query', '')
+    selected_file = request.POST.get('file', '')
     
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
     PG_CONFIG = {
@@ -29,15 +32,16 @@ def query_documents(request):
     rag_system = RAGSystem(GEMINI_API_KEY, PG_CONFIG, DOCUMENTATION_FOLDER)
     
     try:
-        relevant_docs = rag_system.retrieve_relevant_documents(query)
+        relevant_docs = rag_system.retrieve_relevant_documents(query, selected_file)
         
         if not relevant_docs:
             rag_system.store_document_embeddings()
         
-        answer = rag_system.answer_query(query)
+        answer = rag_system.answer_query(query, selected_file)
         
         return JsonResponse({
-            'answer': answer
+            'answer': answer,
+            'selected_file': selected_file
         })
     except Exception as e:
         return JsonResponse({

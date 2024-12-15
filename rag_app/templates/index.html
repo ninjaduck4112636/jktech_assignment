@@ -22,6 +22,9 @@
         #submit-btn {
             padding: 10px 20px;
         }
+        #file-select {
+            padding: 10px;
+        }
         #result {
             border: 1px solid #ccc;
             padding: 15px;
@@ -33,6 +36,11 @@
     <h1>Document Query System</h1>
     <form id="query-form">
         {% csrf_token %}
+        <select id="file-select" name="file">
+            {% for file in files %}
+                <option value="{{ file }}">{{ file }}</option>
+            {% endfor %}
+        </select>
         <input type="text" id="query-input" name="query" placeholder="Enter your query" required>
         <button type="submit" id="submit-btn">Query</button>
     </form>
@@ -44,6 +52,7 @@
             const form = e.target;
             const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
             const query = document.getElementById('query-input').value;
+            const selectedFile = document.getElementById('file-select').value;
             const resultDiv = document.getElementById('result');
             
             resultDiv.textContent = 'Loading...';
@@ -57,7 +66,11 @@
                 }
             )
             .then(response => {
-                resultDiv.textContent = response.data.answer;
+                if (response.data.answer && response.data.selected_file === selectedFile) {
+                    resultDiv.textContent = response.data.answer;
+                } else {
+                    resultDiv.textContent = `No match found for the selected file: ${selectedFile}.`;
+                }
             })
             .catch(error => {
                 resultDiv.textContent = 'Error: ' + (error.response ? error.response.data.error : error.message);

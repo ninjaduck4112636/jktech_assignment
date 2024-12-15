@@ -78,13 +78,16 @@ class RAGSystem:
             )
         self.conn.commit()
 
-    def retrieve_relevant_documents(self, query: str, top_k: int = 3) -> List[Tuple[str, str]]:
+    def retrieve_relevant_documents(self, query: str, selected_file: str, top_k: int = 3) -> List[Tuple[str, str]]:
         query_embedding = self.generate_embeddings([query])[0]
         self.cursor.execute('SELECT document_path, content, embedding FROM document_embeddings')
         results = self.cursor.fetchall()
         
         similarities = []
         for doc_path, content, embedding_str in results:
+            if os.path.basename(doc_path) != selected_file:
+                continue  
+
             stored_embedding = json.loads(embedding_str)
             similarity = np.dot(query_embedding, stored_embedding) / (
                 np.linalg.norm(query_embedding) * np.linalg.norm(stored_embedding)
@@ -94,9 +97,12 @@ class RAGSystem:
         similarities.sort(key=lambda x: x[0], reverse=True)
         return [(doc_path, doc) for _, doc, doc_path in similarities[:top_k]]
 
-    def answer_query(self, query: str) -> str:
-        relevant_docs = self.retrieve_relevant_documents(query)
+    def answer_query(self, query: str, selected_file: str) -> str:
+        relevant_docs = self.retrieve_relevant_documents(query, selected_file)
         
+        if not relevant_docs:
+            return "No relevant documents found in the selected file."
+
         context = "\n\n".join(doc for _, doc in relevant_docs)
         
         model = genai.GenerativeModel('gemini-pro')
